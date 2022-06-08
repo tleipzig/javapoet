@@ -15,15 +15,6 @@
  */
 package com.squareup.javapoet;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -34,14 +25,16 @@ import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Types;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.*;
 
-import static com.squareup.javapoet.Util.checkArgument;
-import static com.squareup.javapoet.Util.checkNotNull;
-import static com.squareup.javapoet.Util.checkState;
+import static com.squareup.javapoet.Util.*;
 
 /** A generated constructor or method declaration. */
 public final class MethodSpec {
-  static final String CONSTRUCTOR = "<init>";
+  // Bootify public
+  public static final String CONSTRUCTOR = "<init>";
 
   public final String name;
   public final CodeBlock javadoc;
@@ -56,7 +49,12 @@ public final class MethodSpec {
   public final CodeBlock defaultValue;
 
   private MethodSpec(Builder builder) {
-    CodeBlock code = builder.code.build();
+    CodeBlock code;
+    if (builder.codeProvider != null) {
+      code = builder.codeProvider.provide();
+    } else {
+      code = builder.code.build();
+    }
     checkArgument(code.isEmpty() || !builder.modifiers.contains(Modifier.ABSTRACT),
         "abstract method %s cannot have code", builder.name);
     checkArgument(!builder.varargs || lastParameterIsArray(builder.parameters),
@@ -83,7 +81,7 @@ public final class MethodSpec {
   void emit(CodeWriter codeWriter, String enclosingName, Set<Modifier> implicitModifiers)
       throws IOException {
     codeWriter.emitJavadoc(javadocWithParameters());
-    codeWriter.emitAnnotations(annotations, false);
+    codeWriter.emitAnnotations(annotations, false, true);
     codeWriter.emitModifiers(modifiers, implicitModifiers);
 
     if (!typeVariables.isEmpty()) {
@@ -217,7 +215,7 @@ public final class MethodSpec {
     }
 
     String methodName = method.getSimpleName().toString();
-    MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(methodName);
+    Builder methodBuilder = MethodSpec.methodBuilder(methodName);
 
     methodBuilder.addAnnotation(Override.class);
 
@@ -293,6 +291,7 @@ public final class MethodSpec {
 
   public static final class Builder {
     private String name;
+    private CodeProvider codeProvider;
 
     private final CodeBlock.Builder javadoc = CodeBlock.builder();
     private TypeName returnType;
@@ -308,6 +307,14 @@ public final class MethodSpec {
 
     private Builder(String name) {
       setName(name);
+    }
+
+    public void setCodeProvider(final CodeProvider codeProvider) {
+      this.codeProvider = codeProvider;
+    }
+
+    public CodeProvider getCodeProvider() {
+      return codeProvider;
     }
 
     public Builder setName(String name) {

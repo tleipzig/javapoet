@@ -15,18 +15,12 @@
  */
 package com.squareup.javapoet;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.*;
 
 import static com.squareup.javapoet.Util.checkArgument;
 import static com.squareup.javapoet.Util.checkNotNull;
@@ -124,7 +118,7 @@ public final class TypeVariableName extends TypeName {
       typeVariableName = new TypeVariableName(element.getSimpleName().toString(), visibleBounds);
       typeVariables.put(element, typeVariableName);
       for (TypeMirror typeMirror : element.getBounds()) {
-        bounds.add(TypeName.get(typeMirror, typeVariables));
+        bounds.add(get(typeMirror, typeVariables));
       }
       bounds.remove(OBJECT);
     }
@@ -159,7 +153,7 @@ public final class TypeVariableName extends TypeName {
       result = new TypeVariableName(type.getName(), visibleBounds);
       map.put(type, result);
       for (Type bound : type.getBounds()) {
-        bounds.add(TypeName.get(bound, map));
+        bounds.add(get(bound, map));
       }
       bounds.remove(OBJECT);
     }

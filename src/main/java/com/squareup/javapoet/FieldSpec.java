@@ -15,18 +15,16 @@
  */
 package com.squareup.javapoet;
 
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Modifier;
 
-import static com.squareup.javapoet.Util.checkArgument;
-import static com.squareup.javapoet.Util.checkNotNull;
-import static com.squareup.javapoet.Util.checkState;
+import static com.squareup.javapoet.Util.*;
 
 /** A generated field declaration. */
 public final class FieldSpec {
@@ -36,6 +34,8 @@ public final class FieldSpec {
   public final List<AnnotationSpec> annotations;
   public final Set<Modifier> modifiers;
   public final CodeBlock initializer;
+  // Bootify
+  public final String note;
 
   private FieldSpec(Builder builder) {
     this.type = checkNotNull(builder.type, "type == null");
@@ -46,6 +46,8 @@ public final class FieldSpec {
     this.initializer = (builder.initializer == null)
         ? CodeBlock.builder().build()
         : builder.initializer;
+    // Bootify
+    this.note = builder.note;
   }
 
   public boolean hasModifier(Modifier modifier) {
@@ -54,14 +56,21 @@ public final class FieldSpec {
 
   void emit(CodeWriter codeWriter, Set<Modifier> implicitModifiers) throws IOException {
     codeWriter.emitJavadoc(javadoc);
-    codeWriter.emitAnnotations(annotations, false);
+    // Bootify - annotation values inline (linebreak after annotations)
+    codeWriter.emitAnnotations(annotations, false, true);
     codeWriter.emitModifiers(modifiers, implicitModifiers);
     codeWriter.emit("$T $L", type, name);
     if (!initializer.isEmpty()) {
       codeWriter.emit(" = ");
       codeWriter.emit(initializer);
     }
-    codeWriter.emit(";\n");
+    codeWriter.emit(";");
+    // Bootify
+    if (note != null) {
+      codeWriter.emit(" // ");
+      codeWriter.emit(note);
+    }
+    codeWriter.emit("\n");
   }
 
   @Override public boolean equals(Object o) {
@@ -108,10 +117,13 @@ public final class FieldSpec {
 
   public static final class Builder {
     private final TypeName type;
-    private final String name;
+    // Bootify - make public
+    public final String name;
 
     private final CodeBlock.Builder javadoc = CodeBlock.builder();
     private CodeBlock initializer = null;
+    // Bootify
+    private String note = null;
 
     public final List<AnnotationSpec> annotations = new ArrayList<>();
     public final List<Modifier> modifiers = new ArrayList<>();
@@ -128,6 +140,12 @@ public final class FieldSpec {
 
     public Builder addJavadoc(CodeBlock block) {
       javadoc.add(block);
+      return this;
+    }
+
+    // Bootify
+    public Builder addNote(final String note) {
+      this.note = note;
       return this;
     }
 

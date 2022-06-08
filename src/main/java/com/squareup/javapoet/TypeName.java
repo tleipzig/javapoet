@@ -15,28 +15,18 @@
  */
 package com.squareup.javapoet;
 
-import java.io.IOException;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import lombok.Getter;
+
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.type.ArrayType;
-import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.ErrorType;
-import javax.lang.model.type.NoType;
-import javax.lang.model.type.PrimitiveType;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.*;
 import javax.lang.model.util.SimpleTypeVisitor8;
+import java.io.IOException;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
+import java.lang.reflect.*;
+import java.util.*;
 
 /**
  * Any type in Java's type system, plus {@code void}. This class is an identifier for primitive
@@ -88,11 +78,21 @@ public class TypeName {
   private static final ClassName BOXED_DOUBLE = ClassName.get("java.lang", "Double");
 
   /** The name of this type if it is a keyword, or null. */
-  private final String keyword;
+  // Bootify make public
+  public final String keyword;
   public final List<AnnotationSpec> annotations;
 
   /** Lazily-initialized toString of this type name. */
   private String cachedString;
+
+  // Bootify
+  @Getter
+  boolean nullable = false;
+
+  public TypeName nullable() {
+    nullable = true;
+    return this;
+  }
 
   private TypeName(String keyword) {
     this(keyword, new ArrayList<>());

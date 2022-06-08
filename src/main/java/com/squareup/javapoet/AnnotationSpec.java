@@ -15,30 +15,17 @@
  */
 package com.squareup.javapoet;
 
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.*;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.SimpleAnnotationValueVisitor8;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import javax.lang.model.SourceVersion;
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.SimpleAnnotationValueVisitor8;
+import java.util.*;
 
-import static com.squareup.javapoet.Util.characterLiteralWithoutSingleQuotes;
-import static com.squareup.javapoet.Util.checkArgument;
-import static com.squareup.javapoet.Util.checkNotNull;
+import static com.squareup.javapoet.Util.*;
 
 /** A generated annotation on a declaration. */
 public final class AnnotationSpec {
@@ -51,15 +38,62 @@ public final class AnnotationSpec {
   }
 
   void emit(CodeWriter codeWriter, boolean inline) throws IOException {
+    emit(codeWriter, inline, inline);
+  }
+
+  // Bootify - testing annotation length
+  private long annotationLength() throws IOException {
+      // manual workarounds
+    if (this.type instanceof ClassName) {
+      final ClassName classType = (ClassName)this.type;
+      if (classType.simpleName.equals("ManyToMany") &&
+              this.members.size() == 1 && this.members.keySet().iterator().next().equals("cascade")) {
+        return 1;
+      } else if (classType.simpleName.equals("RestControllerAdvice") &&
+              this.members.size() == 1 && this.members.keySet().iterator().next().equals("annotations")) {
+        return 1;
+      } else if (classType.simpleName.equals("RequestMapping")) {
+        return 1;
+      } else if (classType.simpleName.equals("Sql")) {
+        return 1;
+      } else if (classType.simpleName.equals("TypeDef") && this.members.size() == 2) {
+        final Iterator<List<CodeBlock>> it = this.members.values().iterator();
+        it.next();
+        final List<CodeBlock> member = it.next();
+        if (member.size() == 1 && member.get(0).args.size() == 1) {
+          Object val = member.get(0).args.get(0);
+          if (val instanceof ClassName && ((ClassName) val).packageName.equals("com.vladmihalcea.hibernate.type.json")) {
+            return 1;
+          }
+        }
+      }
+    }
+    final StringBuilder out = new StringBuilder();
+    final CodeWriter cw = new CodeWriter(out);
+    for (Iterator<Map.Entry<String, List<CodeBlock>>> i
+         = members.entrySet().iterator(); i.hasNext(); ) {
+      Map.Entry<String, List<CodeBlock>> entry = i.next();
+      cw.emit("$L = ", entry.getKey());
+      emitAnnotationValues(cw, "", ", ", entry.getValue());
+      if (i.hasNext()) cw.emit(", ");
+    }
+    return out.length();
+  }
+
+  // Bootify - add valuesInline
+  void emit(CodeWriter codeWriter, boolean inline, boolean valuesInline) throws IOException {
     String whitespace = inline ? "" : "\n";
-    String memberSeparator = inline ? ", " : ",\n";
+    // Bootify smart line breaks
+    valuesInline = valuesInline && (members.isEmpty() || annotationLength() < 70);
+    String memberWhitespace = valuesInline ? "" : "\n";
+    String memberSeparator = valuesInline ? ", " : ",\n";
     if (members.isEmpty()) {
       // @Singleton
       codeWriter.emit("@$T", type);
     } else if (members.size() == 1 && members.containsKey("value")) {
       // @Named("foo")
       codeWriter.emit("@$T(", type);
-      emitAnnotationValues(codeWriter, whitespace, memberSeparator, members.get("value"));
+      emitAnnotationValues(codeWriter, valuesInline ? "" : whitespace, memberSeparator, members.get("value"));
       codeWriter.emit(")");
     } else {
       // Inline:
@@ -70,17 +104,17 @@ public final class AnnotationSpec {
       //       name = "updated_at",
       //       nullable = false
       //   )
-      codeWriter.emit("@$T(" + whitespace, type);
+      codeWriter.emit("@$T(" + memberWhitespace, type);
       codeWriter.indent(2);
       for (Iterator<Map.Entry<String, List<CodeBlock>>> i
           = members.entrySet().iterator(); i.hasNext(); ) {
         Map.Entry<String, List<CodeBlock>> entry = i.next();
         codeWriter.emit("$L = ", entry.getKey());
-        emitAnnotationValues(codeWriter, whitespace, memberSeparator, entry.getValue());
+        emitAnnotationValues(codeWriter, memberWhitespace, memberSeparator, entry.getValue());
         if (i.hasNext()) codeWriter.emit(memberSeparator);
       }
       codeWriter.unindent(2);
-      codeWriter.emit(whitespace + ")");
+      codeWriter.emit(memberWhitespace + ")");
     }
   }
 
@@ -141,7 +175,7 @@ public final class AnnotationSpec {
 
   public static AnnotationSpec get(AnnotationMirror annotation) {
     TypeElement element = (TypeElement) annotation.getAnnotationType().asElement();
-    AnnotationSpec.Builder builder = AnnotationSpec.builder(ClassName.get(element));
+    Builder builder = AnnotationSpec.builder(ClassName.get(element));
     Visitor visitor = new Visitor(builder);
     for (ExecutableElement executableElement : annotation.getElementValues().keySet()) {
       String name = executableElement.getSimpleName().toString();
@@ -197,6 +231,17 @@ public final class AnnotationSpec {
 
     private Builder(TypeName type) {
       this.type = type;
+    }
+
+    // Bootify
+    public Builder addListMember(String name, String format, Object... args) {
+      return addListMember(name, CodeBlock.of(format, args));
+    }
+    public Builder addListMember(String name, CodeBlock codeBlock) {
+      List<CodeBlock> values = members.computeIfAbsent(name, k -> new ArrayList<>());
+      codeBlock.isAnnotationList = true;
+      values.add(codeBlock);
+      return this;
     }
 
     public Builder addMember(String name, String format, Object... args) {

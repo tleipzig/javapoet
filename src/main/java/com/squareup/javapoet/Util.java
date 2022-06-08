@@ -15,16 +15,8 @@
  */
 package com.squareup.javapoet;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import javax.lang.model.element.Modifier;
+import java.util.*;
 
 import static java.lang.Character.isISOControl;
 

@@ -15,6 +15,8 @@
  */
 package com.squareup.javapoet;
 
+import javax.lang.model.element.Element;
+import javax.lang.model.type.TypeMirror;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -24,8 +26,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.StreamSupport;
-import javax.lang.model.element.Element;
-import javax.lang.model.type.TypeMirror;
 
 import static com.squareup.javapoet.Util.checkArgument;
 
@@ -49,8 +49,8 @@ import static com.squareup.javapoet.Util.checkArgument;
  *   <li>{@code $S} escapes the value as a <em>string</em>, wraps it with double quotes, and emits
  *       that. For example, {@code 6" sandwich} is emitted {@code "6\" sandwich"}.
  *   <li>{@code $T} emits a <em>type</em> reference. Types will be imported if possible. Arguments
- *       for types may be {@linkplain Class classes}, {@linkplain javax.lang.model.type.TypeMirror
-,*       type mirrors}, and {@linkplain javax.lang.model.element.Element elements}.
+ *       for types may be {@linkplain Class classes}, {@linkplain TypeMirror
+,*       type mirrors}, and {@linkplain Element elements}.
  *   <li>{@code $$} emits a dollar sign.
  *   <li>{@code $W} emits a space or a newline, depending on its position on the line. This prefers
  *       to wrap lines before 100 columns.
@@ -68,8 +68,12 @@ public final class CodeBlock {
   private static final Pattern LOWERCASE = Pattern.compile("[a-z]+[\\w_]*");
 
   /** A heterogeneous list containing string literals and value placeholders. */
-  final List<String> formatParts;
-  final List<Object> args;
+  // Bootify - make public
+  public final List<String> formatParts;
+  public final List<Object> args;
+
+  // Bootify - workaround for Kotlin annotations
+  public boolean isAnnotationList = false;
 
   private CodeBlock(Builder builder) {
     this.formatParts = Util.immutableList(builder.formatParts);
@@ -174,7 +178,7 @@ public final class CodeBlock {
      * character. Argument names consist of characters in {@code a-z, A-Z, 0-9, and _} and must
      * start with a lowercase character.
      *
-     * <p>For example, to refer to the type {@link java.lang.Integer} with the argument name {@code
+     * <p>For example, to refer to the type {@link Integer} with the argument name {@code
      * clazz} use a format string containing {@code $clazz:T} and include the key {@code clazz} with
      * value {@code java.lang.Integer.class} in the argument map.
      */
@@ -324,6 +328,8 @@ public final class CodeBlock {
           this.args.add(argToLiteral(arg));
           break;
         case 'S':
+        // Bootify - allow translation for kotlinpoet
+        case 'P':
           this.args.add(argToString(arg));
           break;
         case 'T':

@@ -15,25 +15,12 @@
  */
 package com.squareup.javapoet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Modifier;
+import java.io.IOException;
+import java.util.*;
 
-import static com.squareup.javapoet.Util.checkArgument;
-import static com.squareup.javapoet.Util.checkNotNull;
-import static com.squareup.javapoet.Util.checkState;
-import static com.squareup.javapoet.Util.stringLiteralWithDoubleQuotes;
+import static com.squareup.javapoet.Util.*;
 import static java.lang.String.join;
 
 /**
@@ -162,8 +149,13 @@ final class CodeWriter {
   }
 
   public void emitAnnotations(List<AnnotationSpec> annotations, boolean inline) throws IOException {
+    emitAnnotations(annotations, inline, inline);
+  }
+
+  // Bootify - add valuesInline
+  public void emitAnnotations(List<AnnotationSpec> annotations, boolean inline, boolean valuesInline) throws IOException {
     for (AnnotationSpec annotationSpec : annotations) {
-      annotationSpec.emit(this, inline);
+      annotationSpec.emit(this, inline, valuesInline);
       emit(inline ? " " : "\n");
     }
   }
