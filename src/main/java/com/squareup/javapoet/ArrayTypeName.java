@@ -30,6 +30,14 @@ import static com.squareup.javapoet.Util.checkNotNull;
 public final class ArrayTypeName extends TypeName {
   public final TypeName componentType;
 
+  // Bootify
+  @Override
+  public ArrayTypeName nullable() {
+    final ArrayTypeName newType = new ArrayTypeName(componentType, annotations);
+    newType.nullable = true;
+    return newType;
+  }
+
   private ArrayTypeName(TypeName componentType) {
     this(componentType, new ArrayList<>());
   }

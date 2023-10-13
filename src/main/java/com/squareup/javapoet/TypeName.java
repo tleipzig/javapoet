@@ -90,8 +90,9 @@ public class TypeName {
   boolean nullable = false;
 
   public TypeName nullable() {
-    nullable = true;
-    return this;
+    final TypeName newType = new TypeName(keyword, annotations);
+    newType.nullable = true;
+    return newType;
   }
 
   private TypeName(String keyword) {

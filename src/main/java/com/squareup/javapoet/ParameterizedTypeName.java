@@ -29,6 +29,15 @@ public final class ParameterizedTypeName extends TypeName {
   public final ClassName rawType;
   public final List<TypeName> typeArguments;
 
+  // Bootify
+  @Override
+  public ParameterizedTypeName nullable() {
+    final ParameterizedTypeName newType = new ParameterizedTypeName(enclosingType, rawType,
+            typeArguments, annotations);
+    newType.nullable = true;
+    return newType;
+  }
+
   ParameterizedTypeName(ParameterizedTypeName enclosingType, ClassName rawType,
       List<TypeName> typeArguments) {
     this(enclosingType, rawType, typeArguments, new ArrayList<>());

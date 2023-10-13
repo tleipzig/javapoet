@@ -46,6 +46,14 @@ public final class ClassName extends TypeName implements Comparable<ClassName> {
   /** The full class name like "java.util.Map.Entry". */
   final String canonicalName;
 
+  // Bootify
+  @Override
+  public ClassName nullable() {
+    final ClassName newType = new ClassName(packageName, enclosingClassName, simpleName, annotations);
+    newType.nullable = true;
+    return newType;
+  }
+
   private ClassName(String packageName, ClassName enclosingClassName, String simpleName) {
     this(packageName, enclosingClassName, simpleName, Collections.emptyList());
   }

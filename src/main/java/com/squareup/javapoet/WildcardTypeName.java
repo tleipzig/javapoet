@@ -28,6 +28,14 @@ public final class WildcardTypeName extends TypeName {
   public final List<TypeName> upperBounds;
   public final List<TypeName> lowerBounds;
 
+  // Bootify
+  @Override
+  public WildcardTypeName nullable() {
+    final WildcardTypeName newType = new WildcardTypeName(upperBounds, lowerBounds, annotations);
+    newType.nullable = true;
+    return newType;
+  }
+
   private WildcardTypeName(List<TypeName> upperBounds, List<TypeName> lowerBounds) {
     this(upperBounds, lowerBounds, new ArrayList<>());
   }

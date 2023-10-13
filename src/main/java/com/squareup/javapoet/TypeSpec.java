@@ -298,12 +298,14 @@ public final class TypeSpec {
             for (FieldSpec fieldSpec : fieldSpecs) {
                 if (fieldSpec.hasModifier(Modifier.STATIC)) continue;
                 // Bootify - extra line between static and regular fields
+                boolean wasStatic = false;
                 if (hasStatic) {
+                    wasStatic = true;
                     hasStatic = false;
                     codeWriter.emit("\n");
                 }
                 // Bootify - no extra line between fields (if all fields have no annotations)
-                if (!firstMember && simpleFields) codeWriter.emit("\n");
+                if (!firstMember && simpleFields && !wasStatic) codeWriter.emit("\n");
                 fieldSpec.emit(codeWriter, kind.implicitFieldModifiers);
                 firstMember = false;
             }
@@ -425,7 +427,8 @@ public final class TypeSpec {
         public final String name;
         private final CodeBlock anonymousTypeArguments;
 
-        private final CodeBlock.Builder javadoc = CodeBlock.builder();
+        // Bootify - public
+        public final CodeBlock.Builder javadoc = CodeBlock.builder();
         private TypeName superclass = ClassName.OBJECT;
         private final CodeBlock.Builder staticBlock = CodeBlock.builder();
         private final CodeBlock.Builder initializerBlock = CodeBlock.builder();
