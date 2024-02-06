@@ -832,7 +832,8 @@ public final class TypeSpec {
             }
 
             for (TypeSpec typeSpec : typeSpecs) {
-                checkArgument(typeSpec.modifiers.containsAll(kind.implicitTypeModifiers),
+                // Bootify - fix use proper kind
+                checkArgument(typeSpec.modifiers.containsAll(typeSpec.kind.implicitTypeModifiers),
                         "%s %s.%s requires modifiers %s", kind, name, typeSpec.name,
                         kind.implicitTypeModifiers);
             }
