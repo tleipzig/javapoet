@@ -65,6 +65,8 @@ public class TypeName {
   public static final TypeName CHAR = new TypeName("char");
   public static final TypeName FLOAT = new TypeName("float");
   public static final TypeName DOUBLE = new TypeName("double");
+  // Bootify
+  public static final TypeName TYPED = new TypeName("");
   public static final ClassName OBJECT = ClassName.get("java.lang", "Object");
 
   private static final ClassName BOXED_VOID = ClassName.get("java.lang", "Void");
@@ -137,7 +139,8 @@ public class TypeName {
    * types including boxed primitives and {@code void}.
    */
   public boolean isPrimitive() {
-    return keyword != null && this != VOID;
+    // Bootify typed check
+    return keyword != null && !"".equals(keyword) && this != VOID;
   }
 
   /**
