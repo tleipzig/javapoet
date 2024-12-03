@@ -52,6 +52,8 @@ public final class AnnotationSpec {
       } else if (classType.simpleName.equals("RestControllerAdvice") &&
               this.members.size() == 1 && this.members.keySet().iterator().next().equals("annotations")) {
         return 1;
+      } else if (classType.simpleName.equals("Email")) {
+        return 1;
       } else if (classType.simpleName.equals("RequestMapping")) {
         return 1;
       } else if (classType.simpleName.equals("Sql")) {
