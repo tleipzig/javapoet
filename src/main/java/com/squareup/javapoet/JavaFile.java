@@ -46,6 +46,7 @@ public final class JavaFile {
     };
 
     public final CodeBlock fileComment;
+    public final CodeBlock rawImports;
     public final String packageName;
     public final TypeSpec typeSpec;
     public final boolean skipJavaLangImports;
@@ -55,6 +56,7 @@ public final class JavaFile {
 
     private JavaFile(Builder builder) {
         this.fileComment = builder.fileComment.build();
+        this.rawImports = builder.rawImports.build();
         this.packageName = builder.packageName;
         this.typeSpec = builder.typeSpec;
         this.skipJavaLangImports = builder.skipJavaLangImports;
@@ -199,7 +201,9 @@ public final class JavaFile {
             importedTypesCount++;
         }
 
-        if (importedTypesCount > 0) {
+        codeWriter.emit(rawImports);
+
+        if (importedTypesCount > 0 || !rawImports.isEmpty()) {
             codeWriter.emit("\n");
         }
         
@@ -260,6 +264,7 @@ public final class JavaFile {
     public Builder toBuilder() {
         Builder builder = new Builder(packageName, typeSpec);
         builder.fileComment.add(fileComment);
+        builder.rawImports.add(rawImports);
         builder.skipJavaLangImports = skipJavaLangImports;
         builder.indent = indent;
         return builder;
@@ -269,6 +274,7 @@ public final class JavaFile {
         private final String packageName;
         private final TypeSpec typeSpec;
         private final CodeBlock.Builder fileComment = CodeBlock.builder();
+        private final CodeBlock.Builder rawImports = CodeBlock.builder();
         private boolean skipJavaLangImports;
         private String indent = "  ";
 
@@ -277,6 +283,19 @@ public final class JavaFile {
         private Builder(String packageName, TypeSpec typeSpec) {
             this.packageName = packageName;
             this.typeSpec = typeSpec;
+        }
+
+        /**
+         * Appends literal import declarations after the generated imports. No syntax checking or
+         * import resolution is performed. A missing trailing newline is added.
+         */
+        public Builder addRawImports(String imports) {
+            checkNotNull(imports, "imports == null");
+            if (!imports.isEmpty()) {
+                rawImports.add("$L", imports);
+                if (!imports.endsWith("\n")) rawImports.add("\n");
+            }
+            return this;
         }
 
         public Builder addFileComment(String format, Object... args) {

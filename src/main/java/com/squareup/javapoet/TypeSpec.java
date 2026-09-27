@@ -45,6 +45,7 @@ public final class TypeSpec {
     public final List<FieldSpec> fieldSpecs;
     public final CodeBlock staticBlock;
     public final CodeBlock initializerBlock;
+    public final CodeBlock rawMembers;
     public final List<MethodSpec> methodSpecs;
     public final List<TypeSpec> typeSpecs;
     final Set<String> nestedTypesSimpleNames;
@@ -65,6 +66,7 @@ public final class TypeSpec {
         this.fieldSpecs = Util.immutableList(builder.fieldSpecs);
         this.staticBlock = builder.staticBlock.build();
         this.initializerBlock = builder.initializerBlock.build();
+        this.rawMembers = builder.rawMembers.build();
         this.methodSpecs = Util.immutableList(builder.methodSpecs);
         this.typeSpecs = Util.immutableList(builder.typeSpecs);
         this.alwaysQualifiedNames = Util.immutableSet(builder.alwaysQualifiedNames);
@@ -99,6 +101,7 @@ public final class TypeSpec {
         this.fieldSpecs = Collections.emptyList();
         this.staticBlock = type.staticBlock;
         this.initializerBlock = type.initializerBlock;
+        this.rawMembers = type.rawMembers;
         this.methodSpecs = Collections.emptyList();
         this.typeSpecs = Collections.emptyList();
         this.originatingElements = Collections.emptyList();
@@ -163,6 +166,7 @@ public final class TypeSpec {
         builder.methodSpecs.addAll(methodSpecs);
         builder.typeSpecs.addAll(typeSpecs);
         builder.initializerBlock.add(initializerBlock);
+        builder.rawMembers.add(rawMembers);
         builder.staticBlock.add(staticBlock);
         builder.originatingElements.addAll(originatingElements);
         builder.alwaysQualifiedNames.addAll(alwaysQualifiedNames);
@@ -170,7 +174,8 @@ public final class TypeSpec {
     }
 
     boolean hasContent() {
-        return !methodSpecs.isEmpty() || !fieldSpecs.isEmpty() || !enumConstants.isEmpty();
+        return !methodSpecs.isEmpty() || !fieldSpecs.isEmpty() || !enumConstants.isEmpty()
+                || !rawMembers.isEmpty();
     }
 
     void emit(CodeWriter codeWriter, String enumName, Set<Modifier> implicitModifiers)
@@ -190,7 +195,8 @@ public final class TypeSpec {
                     codeWriter.emit(anonymousTypeArguments);
                     codeWriter.emit(")");
                 }
-                if (fieldSpecs.isEmpty() && methodSpecs.isEmpty() && typeSpecs.isEmpty()) {
+                if (fieldSpecs.isEmpty() && methodSpecs.isEmpty() && typeSpecs.isEmpty()
+                        && rawMembers.isEmpty()) {
                     return; // Avoid unnecessary braces "{}".
                 }
                 codeWriter.emit(" {\n");
@@ -267,7 +273,8 @@ public final class TypeSpec {
                 firstMember = false;
                 if (i.hasNext()) {
                     codeWriter.emit(",\n");
-                } else if (!fieldSpecs.isEmpty() || !methodSpecs.isEmpty() || !typeSpecs.isEmpty()) {
+                } else if (!fieldSpecs.isEmpty() || !methodSpecs.isEmpty() || !typeSpecs.isEmpty()
+                        || !rawMembers.isEmpty()) {
                     codeWriter.emit(";\n");
                 } else {
                     codeWriter.emit("\n");
@@ -338,6 +345,11 @@ public final class TypeSpec {
                 if (!firstMember) codeWriter.emit("\n");
                 typeSpec.emit(codeWriter, null, kind.implicitTypeModifiers);
                 firstMember = false;
+            }
+
+            if (!rawMembers.isEmpty()) {
+                if (!firstMember) codeWriter.emit("\n");
+                codeWriter.emit(rawMembers);
             }
 
             codeWriter.unindent();
@@ -432,6 +444,7 @@ public final class TypeSpec {
         private TypeName superclass = ClassName.OBJECT;
         private final CodeBlock.Builder staticBlock = CodeBlock.builder();
         private final CodeBlock.Builder initializerBlock = CodeBlock.builder();
+        private final CodeBlock.Builder rawMembers = CodeBlock.builder();
 
         public final Map<String, TypeSpec> enumConstants = new LinkedHashMap<>();
         public final List<AnnotationSpec> annotations = new ArrayList<>();
@@ -450,6 +463,20 @@ public final class TypeSpec {
             this.kind = kind;
             this.name = name;
             this.anonymousTypeArguments = anonymousTypeArguments;
+        }
+
+        /**
+         * Appends literal members after all generated members, inside the type's closing brace.
+         * The type indentation is applied; relative indentation must be supplied by the caller.
+         * No syntax checking or import resolution is performed. A missing trailing newline is added.
+         */
+        public Builder addRawMembers(String members) {
+            checkNotNull(members, "members == null");
+            if (!members.isEmpty()) {
+                rawMembers.add("$L", members);
+                if (!members.endsWith("\n")) rawMembers.add("\n");
+            }
+            return this;
         }
 
         public Builder addJavadoc(String format, Object... args) {
