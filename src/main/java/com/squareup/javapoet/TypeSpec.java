@@ -46,6 +46,7 @@ public final class TypeSpec {
     public final CodeBlock staticBlock;
     public final CodeBlock initializerBlock;
     public final CodeBlock rawMembers;
+    public final CodeBlock rawMethods;
     public final List<MethodSpec> methodSpecs;
     public final List<TypeSpec> typeSpecs;
     final Set<String> nestedTypesSimpleNames;
@@ -67,6 +68,7 @@ public final class TypeSpec {
         this.staticBlock = builder.staticBlock.build();
         this.initializerBlock = builder.initializerBlock.build();
         this.rawMembers = builder.rawMembers.build();
+        this.rawMethods = builder.rawMethods.build();
         this.methodSpecs = Util.immutableList(builder.methodSpecs);
         this.typeSpecs = Util.immutableList(builder.typeSpecs);
         this.alwaysQualifiedNames = Util.immutableSet(builder.alwaysQualifiedNames);
@@ -102,6 +104,7 @@ public final class TypeSpec {
         this.staticBlock = type.staticBlock;
         this.initializerBlock = type.initializerBlock;
         this.rawMembers = type.rawMembers;
+        this.rawMethods = type.rawMethods;
         this.methodSpecs = Collections.emptyList();
         this.typeSpecs = Collections.emptyList();
         this.originatingElements = Collections.emptyList();
@@ -167,6 +170,7 @@ public final class TypeSpec {
         builder.typeSpecs.addAll(typeSpecs);
         builder.initializerBlock.add(initializerBlock);
         builder.rawMembers.add(rawMembers);
+        builder.rawMethods.add(rawMethods);
         builder.staticBlock.add(staticBlock);
         builder.originatingElements.addAll(originatingElements);
         builder.alwaysQualifiedNames.addAll(alwaysQualifiedNames);
@@ -175,7 +179,7 @@ public final class TypeSpec {
 
     boolean hasContent() {
         return !methodSpecs.isEmpty() || !fieldSpecs.isEmpty() || !enumConstants.isEmpty()
-                || !rawMembers.isEmpty();
+                || !rawMembers.isEmpty() || !rawMethods.isEmpty();
     }
 
     void emit(CodeWriter codeWriter, String enumName, Set<Modifier> implicitModifiers)
@@ -196,7 +200,7 @@ public final class TypeSpec {
                     codeWriter.emit(")");
                 }
                 if (fieldSpecs.isEmpty() && methodSpecs.isEmpty() && typeSpecs.isEmpty()
-                        && rawMembers.isEmpty()) {
+                        && rawMembers.isEmpty() && rawMethods.isEmpty()) {
                     return; // Avoid unnecessary braces "{}".
                 }
                 codeWriter.emit(" {\n");
@@ -274,7 +278,7 @@ public final class TypeSpec {
                 if (i.hasNext()) {
                     codeWriter.emit(",\n");
                 } else if (!fieldSpecs.isEmpty() || !methodSpecs.isEmpty() || !typeSpecs.isEmpty()
-                        || !rawMembers.isEmpty()) {
+                        || !rawMembers.isEmpty() || !rawMethods.isEmpty()) {
                     codeWriter.emit(";\n");
                 } else {
                     codeWriter.emit("\n");
@@ -343,6 +347,12 @@ public final class TypeSpec {
                 if (methodSpec.isConstructor()) continue;
                 if (!firstMember) codeWriter.emit("\n");
                 methodSpec.emit(codeWriter, name, kind.implicitMethodModifiers);
+                firstMember = false;
+            }
+
+            if (!rawMethods.isEmpty()) {
+                if (!firstMember) codeWriter.emit("\n");
+                codeWriter.emit(rawMethods);
                 firstMember = false;
             }
 
@@ -446,6 +456,7 @@ public final class TypeSpec {
         private final CodeBlock.Builder staticBlock = CodeBlock.builder();
         private final CodeBlock.Builder initializerBlock = CodeBlock.builder();
         private final CodeBlock.Builder rawMembers = CodeBlock.builder();
+        private final CodeBlock.Builder rawMethods = CodeBlock.builder();
 
         public final Map<String, TypeSpec> enumConstants = new LinkedHashMap<>();
         public final List<AnnotationSpec> annotations = new ArrayList<>();
@@ -467,7 +478,7 @@ public final class TypeSpec {
         }
 
         /**
-         * Appends literal members after all generated members, inside the type's closing brace.
+         * Appends literal members after the fields, inside the type's closing brace.
          * The type indentation is applied; relative indentation must be supplied by the caller.
          * No syntax checking or import resolution is performed. A missing trailing newline is added.
          */
@@ -476,6 +487,16 @@ public final class TypeSpec {
             if (!members.isEmpty()) {
                 rawMembers.add("$L", members);
                 if (!members.endsWith("\n")) rawMembers.add("\n");
+            }
+            return this;
+        }
+
+        /** Appends literal methods after the generated methods. */
+        public Builder addRawMethods(String methods) {
+            checkNotNull(methods, "methods == null");
+            if (!methods.isEmpty()) {
+                rawMethods.add("$L", methods);
+                if (!methods.endsWith("\n")) rawMethods.add("\n");
             }
             return this;
         }
