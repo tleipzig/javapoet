@@ -317,6 +317,12 @@ public final class TypeSpec {
                 firstMember = false;
             }
 
+            if (!rawMembers.isEmpty()) {
+                if (!firstMember) codeWriter.emit("\n");
+                codeWriter.emit(rawMembers);
+                firstMember = false;
+            }
+
             // Initializer block.
             if (!initializerBlock.isEmpty()) {
                 if (!firstMember) codeWriter.emit("\n");
@@ -345,11 +351,6 @@ public final class TypeSpec {
                 if (!firstMember) codeWriter.emit("\n");
                 typeSpec.emit(codeWriter, null, kind.implicitTypeModifiers);
                 firstMember = false;
-            }
-
-            if (!rawMembers.isEmpty()) {
-                if (!firstMember) codeWriter.emit("\n");
-                codeWriter.emit(rawMembers);
             }
 
             codeWriter.unindent();

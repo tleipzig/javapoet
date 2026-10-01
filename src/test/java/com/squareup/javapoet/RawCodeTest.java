@@ -36,9 +36,11 @@ public class RawCodeTest {
         assertTrue(source.contains("import java.util.Date;\nimport java.util.*;\n"
                 + "import java.util.concurrent.*;\n"));
         assertTrue(source.indexOf("import java.util.*;") < source.indexOf("/**"));
-        assertTrue(source.indexOf("class Nested") < source.indexOf("public String x()"));
+        assertTrue(source.indexOf("Date date;") < source.indexOf("public String x()"));
+        assertTrue(source.indexOf("public String x()") < source.indexOf("class Nested"));
         assertTrue(source.contains("    public String x() {\n        return \"$L $S $T\";\n    }\n"));
-        assertTrue(source.endsWith("    public List<String> values() { return Collections.emptyList(); }\n\n}\n"));
+        assertTrue(source.contains("    public List<String> values() { return Collections.emptyList(); }\n\n"
+                + "    class Nested"));
         assertEquals(source, file.toBuilder().build().toString());
         assertEquals(type.toString(), type.toBuilder().build().toString());
         assertCompiles(file);
